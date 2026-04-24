@@ -1,0 +1,13 @@
+{
+  "directory": {
+    "item": [
+      {"name": "aapl-20250927.htm", "last-modified": "2025-10-31 16:30:00", "size": "3456789"},
+      {"name": "exhibit31-1.htm", "last-modified": "2025-10-31 16:30:00", "size": "12345"},
+      {"name": "exhibit32-1.htm", "last-modified": "2025-10-31 16:30:00", "size": "5678"},
+      {"name": "aapl-20250927.xsd", "last-modified": "2025-10-31 16:30:00", "size": "99999"},
+      {"name": "R1.htm", "last-modified": "2025-10-31 16:30:00", "size": "8888"}
+    ],
+    "name": "000032019325000059",
+    "parent-dir": "/Archives/edgar/data/320193/"
+  }
+}

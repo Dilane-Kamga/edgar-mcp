@@ -1,0 +1,52 @@
+{
+  "cik": 320193,
+  "entityName": "Apple Inc.",
+  "facts": {
+    "us-gaap": {
+      "Revenues": {
+        "label": "Revenue from Contract with Customer, Excluding Assessed Tax",
+        "description": "Amount of revenue recognized from goods sold, services rendered, insurance premiums, or other activities that constitute an earning process.",
+        "units": {
+          "USD": [
+            {"end": "2024-09-28", "val": 391035000000, "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01", "frame": "CY2024"},
+            {"end": "2023-09-30", "val": 383285000000, "fy": 2023, "fp": "FY", "form": "10-K", "filed": "2023-11-03", "frame": "CY2023"},
+            {"end": "2022-09-24", "val": 394328000000, "fy": 2022, "fp": "FY", "form": "10-K", "filed": "2022-10-28", "frame": "CY2022"},
+            {"end": "2024-06-29", "val": 85777000000, "fy": 2024, "fp": "Q3", "form": "10-Q", "filed": "2024-08-02", "frame": "CY2024Q3"},
+            {"end": "2024-03-30", "val": 90753000000, "fy": 2024, "fp": "Q2", "form": "10-Q", "filed": "2024-05-03", "frame": "CY2024Q2"}
+          ]
+        }
+      },
+      "NetIncomeLoss": {
+        "label": "Net Income (Loss)",
+        "description": "The portion of profit or loss for the period.",
+        "units": {
+          "USD": [
+            {"end": "2024-09-28", "val": 93736000000, "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01", "frame": "CY2024"},
+            {"end": "2023-09-30", "val": 96995000000, "fy": 2023, "fp": "FY", "form": "10-K", "filed": "2023-11-03", "frame": "CY2023"}
+          ]
+        }
+      },
+      "Assets": {
+        "label": "Total Assets",
+        "description": "Sum of the carrying amounts as of the balance sheet date.",
+        "units": {
+          "USD": [
+            {"end": "2024-09-28", "val": 364980000000, "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2024-11-01", "frame": "CY2024"},
+            {"end": "2023-09-30", "val": 352583000000, "fy": 2023, "fp": "FY", "form": "10-K", "filed": "2023-11-03", "frame": "CY2023"}
+          ]
+        }
+      }
+    },
+    "dei": {
+      "EntityCommonStockSharesOutstanding": {
+        "label": "Entity Common Stock, Shares Outstanding",
+        "description": "Indicate number of shares outstanding of each of the issuer's classes of common stock.",
+        "units": {
+          "shares": [
+            {"end": "2024-10-18", "val": 15115823000, "fy": 2025, "fp": "Q1", "form": "10-Q", "filed": "2024-11-01"}
+          ]
+        }
+      }
+    }
+  }
+}
