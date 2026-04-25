@@ -14,6 +14,11 @@ _ITEM_HEADING_BOL = re.compile(
     re.IGNORECASE,
 )
 
+_PART_HEADING_BOL = re.compile(
+    r"(?:^|\n)\s*PART\s+(?:II|III|IV)\b",
+    re.IGNORECASE,
+)
+
 _SECTION_START: dict[str, list[re.Pattern[str]]] = {
     "risk_factors": [
         re.compile(
@@ -56,6 +61,32 @@ _SECTION_START: dict[str, list[re.Pattern[str]]] = {
     ],
 }
 
+_SECTION_FALLBACK: dict[str, list[re.Pattern[str]]] = {
+    "risk_factors": [
+        re.compile(r"(?<=\n)Risk\s+Factors\s*(?=\n)", re.IGNORECASE),
+    ],
+    "mda": [
+        re.compile(
+            r"(?<=\n)Management.s\s+Discussion\s+and\s+Analysis\s*(?=\n)",
+            re.IGNORECASE,
+        ),
+    ],
+}
+
+_SECTION_ITEM_NUM: dict[str, str] = {
+    "risk_factors": "1A",
+    "mda": "7",
+    "business": "1",
+    "legal_proceedings": "3",
+    "properties": "2",
+    "controls_and_procedures": "9A",
+}
+
+_PREAMBLE_PATTERN = re.compile(
+    r"cautionary\s+(?:statement|note)|forward[- ]looking\s+statements?|safe\s+harbor",
+    re.IGNORECASE,
+)
+
 SUPPORTED_SECTIONS = list(_SECTION_START.keys())
 
 
@@ -80,13 +111,50 @@ def _is_line_start(text: str, match_start: int) -> bool:
     return prefix == ""
 
 
+def _strip_preamble(text: str) -> str:
+    """Remove cautionary/forward-looking boilerplate paragraphs from the start."""
+    paragraphs = text.split("\n\n")
+    skip = 0
+    for i, para in enumerate(paragraphs[:5]):
+        if len(para.split()) < 500 and _PREAMBLE_PATTERN.search(para):
+            skip = i + 1
+        else:
+            break
+    if skip:
+        return "\n\n".join(paragraphs[skip:]).strip()
+    return text
+
+
+def _score_candidates(
+    text: str, patterns: list[re.Pattern[str]]
+) -> list[tuple[int, re.Match[str]]]:
+    """Score all candidate matches for a set of patterns."""
+    candidates: list[tuple[int, re.Match[str]]] = []
+    for pattern in patterns:
+        for m in pattern.finditer(text):
+            remaining = text[m.end() :]
+            next_item = _ITEM_HEADING.search(remaining)
+            dist = next_item.start() if next_item else len(remaining)
+
+            if dist < 200:
+                continue
+
+            score = 0
+            if _is_line_start(text, m.start()):
+                score += 100
+            score += min(dist // 100, 50)
+
+            candidates.append((score, m))
+    return candidates
+
+
 def extract_section(html: str, section: str) -> tuple[str, str]:
     """Extract a semantic section from filing HTML.
 
     Uses a scoring approach: collects all candidate matches across all
     patterns, scores each by line-start anchoring and content length,
-    then picks the best one. This avoids latching onto cross-references
-    in forward-looking statements or other mid-paragraph mentions.
+    then picks the best one. Falls back to title-only patterns (without
+    Item prefix) for filings that omit standard numbering.
 
     Returns (title, cleaned_text).
     Raises ValueError if the section is not found.
@@ -100,29 +168,11 @@ def extract_section(html: str, section: str) -> tuple[str, str]:
     text = _html_to_text(html)
     text = re.sub(r"\n{3,}", "\n\n", text)
 
-    patterns = _SECTION_START[section]
-    candidates: list[tuple[int, re.Match[str]]] = []
+    candidates = _score_candidates(text, _SECTION_START[section])
 
-    for pattern in patterns:
-        for m in pattern.finditer(text):
-            remaining = text[m.end() :]
-            next_item = _ITEM_HEADING.search(remaining)
-            dist = next_item.start() if next_item else len(remaining)
-
-            # Hard skip: TOC entries where the next heading is very close
-            if dist < 200:
-                continue
-
-            score = 0
-
-            # Strong signal: heading at the start of a line (not mid-paragraph)
-            if _is_line_start(text, m.start()):
-                score += 100
-
-            # Longer content to next heading = more likely the real section
-            score += min(dist // 100, 50)
-
-            candidates.append((score, m))
+    if not candidates:
+        fallback = _SECTION_FALLBACK.get(section, [])
+        candidates = _score_candidates(text, fallback)
 
     if not candidates:
         raise ValueError(f"Section '{section}' not found in filing HTML")
@@ -133,22 +183,33 @@ def extract_section(html: str, section: str) -> tuple[str, str]:
     title = best_match.group(0).strip()
     body = text[best_match.end() :]
 
-    # Extract the item number so we skip page headers that repeat it
     item_num_match = re.search(
         r"(?:ITEM|Item)\s+(\d+[A-Z]?)", best_match.group(0), re.IGNORECASE
     )
-    current_item = item_num_match.group(1).upper() if item_num_match else ""
+    current_item = (
+        item_num_match.group(1).upper()
+        if item_num_match
+        else _SECTION_ITEM_NUM.get(section, "")
+    )
 
-    # Find the next DIFFERENT item heading at line start
+    end_pos: int | None = None
     for end_match in _ITEM_HEADING_BOL.finditer(body):
         end_item_match = re.search(
             r"(?:ITEM|Item)\s+(\d+[A-Z]?)", end_match.group(0), re.IGNORECASE
         )
         if end_item_match and end_item_match.group(1).upper() != current_item:
-            body = body[: end_match.start()]
+            end_pos = end_match.start()
             break
 
-    return title, _clean_text(body)
+    if end_pos is None:
+        part_match = _PART_HEADING_BOL.search(body)
+        if part_match:
+            end_pos = part_match.start()
+
+    if end_pos is not None:
+        body = body[:end_pos]
+
+    return title, _strip_preamble(_clean_text(body))
 
 
 def paginate_section(text: str, max_words: int = 8000) -> list[str]:
