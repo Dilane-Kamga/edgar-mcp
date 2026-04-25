@@ -46,7 +46,7 @@ def diagnose_section(html: str, section: str, label: str) -> None:
         print(f"\n  [{i}] offset={m.start():,}  next_item_dist={dist}  line_start={is_bol}  prefix={prefix[:50]!r}")
         print(f"      ...{snippet[:200]}...")
 
-    print(f"\nExtractor result:")
+    print("\nExtractor result:")
     try:
         title, body = extract_section(html, section)
         wc = len(body.split())

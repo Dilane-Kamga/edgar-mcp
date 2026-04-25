@@ -101,7 +101,7 @@ async def main() -> None:
         print(f"\n--- {company_name} (CIK {cik}) ---")
         filings = await find_10k_accessions(client, cik, count=2)
         if not filings:
-            print(f"  NO 10-K FILINGS FOUND")
+            print("  NO 10-K FILINGS FOUND")
             all_passed = False
             continue
 

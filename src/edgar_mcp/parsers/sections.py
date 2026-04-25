@@ -127,17 +127,26 @@ def extract_section(html: str, section: str) -> tuple[str, str]:
     if not candidates:
         raise ValueError(f"Section '{section}' not found in filing HTML")
 
-    candidates.sort(key=lambda x: (x[0], x[1].start()), reverse=True)
+    candidates.sort(key=lambda x: (x[0], -x[1].start()), reverse=True)
     best_match = candidates[0][1]
 
     title = best_match.group(0).strip()
     body = text[best_match.end() :]
 
-    # Use line-anchored heading regex for end boundary to avoid
-    # truncating at in-body cross-references like "see Item 7."
-    end_match = _ITEM_HEADING_BOL.search(body)
-    if end_match:
-        body = body[: end_match.start()]
+    # Extract the item number so we skip page headers that repeat it
+    item_num_match = re.search(
+        r"(?:ITEM|Item)\s+(\d+[A-Z]?)", best_match.group(0), re.IGNORECASE
+    )
+    current_item = item_num_match.group(1).upper() if item_num_match else ""
+
+    # Find the next DIFFERENT item heading at line start
+    for end_match in _ITEM_HEADING_BOL.finditer(body):
+        end_item_match = re.search(
+            r"(?:ITEM|Item)\s+(\d+[A-Z]?)", end_match.group(0), re.IGNORECASE
+        )
+        if end_item_match and end_item_match.group(1).upper() != current_item:
+            body = body[: end_match.start()]
+            break
 
     return title, _clean_text(body)
 

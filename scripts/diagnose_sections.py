@@ -62,9 +62,9 @@ async def main() -> None:
         print(f"title: {title!r}")
         print(f"body length: {len(body):,} chars")
         print(f"word count: {len(body.split())}")
-        print(f"\n--- first 800 chars ---")
+        print("\n--- first 800 chars ---")
         print(body[:800])
-        print(f"\n--- last 800 chars ---")
+        print("\n--- last 800 chars ---")
         print(body[-800:])
     except ValueError as e:
         print(f"EXTRACTION FAILED: {e}")

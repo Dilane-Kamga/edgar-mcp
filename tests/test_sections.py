@@ -169,3 +169,45 @@ class TestAppleDiffRiskFactors:
         cur_wc = len(self.current_text.split())
         prev_wc = len(self.previous_text.split())
         assert cur_wc != prev_wc, "Both sections have identical word counts"
+
+
+# ---------------------------------------------------------------------------
+# Accenture risk_factors (page-header stress test)
+# ---------------------------------------------------------------------------
+
+
+class TestAccentureFY2025RiskFactors:
+    """Accenture 10-K embeds page headers on every page that repeat the
+    section heading (e.g. "Item 1A. Risk Factors | 12"), creating ~20
+    false-positive matches. This verifies the scorer picks the actual
+    section start, not a late page header."""
+
+    @pytest.fixture(autouse=True)
+    def _load(self) -> None:
+        self.html = _require_fixture("acn_20250831_10k.html")
+        self.title, self.body = extract_section(self.html, "risk_factors")
+        self.wc = len(self.body.split())
+
+    def test_word_count_above_threshold(self) -> None:
+        assert self.wc > 8000, (
+            f"Expected >8k words for Accenture, got {self.wc}. "
+            "Likely picked a late page header instead of the section start."
+        )
+
+    def test_not_page_header_boilerplate(self) -> None:
+        first_100 = self.body[:100].lower()
+        assert "table of contents" not in first_100
+        assert "accenture" not in first_100 or "form 10-k" not in first_100
+
+    def test_contains_early_risk_language(self) -> None:
+        lower = self.body.lower()
+        assert "macroeconomic" in lower or "geopolitical" in lower
+
+    def test_contains_late_risk_language(self) -> None:
+        lower = self.body.lower()
+        assert "irish" in lower or "ireland" in lower
+
+    def test_ends_before_next_item(self) -> None:
+        last_500 = self.body[-500:].lower()
+        assert "unresolved staff comments" not in last_500
+        assert "item 1b" not in last_500
